@@ -51,8 +51,11 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
+  double ref_vel = 0.0; // mph
+  int lane = 1;
+
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy]
+               &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &lane]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -89,9 +92,6 @@ int main() {
           //   of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
 
-          int lane = 1;
-          double ref_vel = 49.5; // mph
-
           int prev_size = previous_path_x.size();
 
           if (prev_size > 0) {
@@ -112,9 +112,17 @@ int main() {
                 check_car_s += (double)prev_size * .02 * check_speed;
 
                 if (check_car_s > car_s && check_car_s-car_s < 30) {
-                    ref_vel = 29.5; // mph
+                    //ref_vel = 29.5; // mph
+                    too_close = true;
                 }
             }
+          }
+
+          if (too_close) { // todo: remove magic value
+            ref_vel -= .224;
+          }
+          else if (ref_vel < 49.5) { // todo: remove magic value
+            ref_vel += .224;
           }
 
           // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
