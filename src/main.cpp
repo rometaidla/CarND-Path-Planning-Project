@@ -106,13 +106,11 @@ int main() {
             if (d < (2+4*lane+2) && d > (2+4*lane-2)) {
                 double vx = sensor_fusion[i][3];
                 double vy = sensor_fusion[i][4];
-                double check_speed = sqrt(vx*vx+vy*vy);
-                double check_car_s = sensor_fusion[i][5];
+                double other_vehicle_velocity = sqrt(vx*vx+vy*vy);
+                double other_vehicle_s = sensor_fusion[i][5]; 
 
-                check_car_s += (double)prev_size * .02 * check_speed;
-
-                if (check_car_s > car_s && check_car_s-car_s < 30) {
-                    //ref_vel = 29.5; // mph
+                double other_vehicle_projected_s = other_vehicle_s + (double)prev_size * .02 * other_vehicle_velocity;
+                if (other_vehicle_projected_s > car_s && other_vehicle_projected_s-car_s < 30) {
                     too_close = true;
                 }
             }
@@ -125,9 +123,9 @@ int main() {
             ref_vel += .224;
           }
 
-          // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
-          vector<double> ptsx;
-          vector<double> ptsy;
+          // Create a list of widely spaced (x,y) anchor points, evenly spaced at 30m
+          vector<double> anchor_points_x;
+          vector<double> anchor_points_y;
 
           // Reference x, y, yaw states
           double ref_x = car_x;
@@ -139,11 +137,11 @@ int main() {
             double prev_car_x = car_x - cos(car_yaw);
             double prev_car_y = car_y - sin(car_yaw);
 
-            ptsx.push_back(prev_car_x);
-            ptsy.push_back(prev_car_y);
+            anchor_points_x.push_back(prev_car_x);
+            anchor_points_y.push_back(prev_car_y);
 
-            ptsx.push_back(car_x);
-            ptsy.push_back(car_y);
+            anchor_points_x.push_back(car_x);
+            anchor_points_y.push_back(car_y);
           }
           // use the previous path's end point as starting reference
           else {
@@ -154,55 +152,50 @@ int main() {
             double ref_y_prev = previous_path_y[prev_size-2];
             ref_yaw = atan2(ref_y-ref_y_prev, ref_x-ref_x_prev);
 
-            ptsx.push_back(ref_x_prev);
-            ptsx.push_back(ref_x);
+            anchor_points_x.push_back(ref_x_prev);
+            anchor_points_x.push_back(ref_x);
             
-            ptsy.push_back(ref_y_prev);
-            ptsy.push_back(ref_y);
+            anchor_points_y.push_back(ref_y_prev);
+            anchor_points_y.push_back(ref_y);
           }
 
-          vector<double> next_wp0 = getXY(car_s+30, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          ptsx.push_back(next_wp0[0]);
-          ptsy.push_back(next_wp0[1]);
-
-          vector<double> next_wp1 = getXY(car_s+60, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          ptsx.push_back(next_wp1[0]);
-          ptsy.push_back(next_wp1[1]);
-
-          vector<double> next_wp2 = getXY(car_s+90, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          ptsx.push_back(next_wp2[0]);
-          ptsy.push_back(next_wp2[1]);
-
-          // TODO: loop
-
-          for (int i = 0; i <  ptsx.size(); i++) {
+          int anchor_points_count = 3;
+          int anchor_points_spacing = 30;
+          for (int i = 1; i <= anchor_points_count; i++) {
+            int anchor_point_s = car_s + i*anchor_points_spacing;
+            vector<double> anchor_point = getXY(anchor_point_s, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            anchor_points_x.push_back(anchor_point[0]);
+            anchor_points_y.push_back(anchor_point[1]);  
+          }
+          
+          for (int i = 0; i <  anchor_points_x.size(); i++) {
             // shift car reference angle to 0 degrees
-            double shift_x = ptsx[i]-ref_x;
-            double shift_y = ptsy[i]-ref_y;
+            double shift_x = anchor_points_x[i]-ref_x;
+            double shift_y = anchor_points_y[i]-ref_y;
 
-            ptsx[i] = shift_x * cos(0-ref_yaw) - shift_y*sin(0-ref_yaw);
-            ptsy[i] = shift_x * sin(0-ref_yaw) + shift_y*cos(0-ref_yaw);
+            anchor_points_x[i] = shift_x * cos(0-ref_yaw) - shift_y*sin(0-ref_yaw);
+            anchor_points_y[i] = shift_x * sin(0-ref_yaw) + shift_y*cos(0-ref_yaw);
           }
 
           tk::spline s;
-          s.set_points(ptsx, ptsy);
+          s.set_points(anchor_points_x, anchor_points_y);
 
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          vector<double> interpolated_points_x; // todo: refactor interpolated / spline points
+          vector<double> interpolated_points_y;
 
           for (int i = 0; i < previous_path_x.size(); i++) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
+            interpolated_points_x.push_back(previous_path_x[i]);
+            interpolated_points_y.push_back(previous_path_y[i]);
           }
 
-          double target_x = 30.0;
+          double target_x = 30.0; // todo: rename horizon length
           double target_y = s(target_x);
-          double target_dist = sqrt(target_x*target_x + target_y*target_y);
+          double target_dist = sqrt(target_x*target_x + target_y*target_y); // todo: helper, ecluadian distance 
 
           double x_add_on = 0;
 
           for (int i = 1; i <= 50-previous_path_x.size(); i++) {
-            double N = target_dist / (.02*ref_vel/2.24);
+            double N = target_dist / (.02*ref_vel/2.24); // todo: rename step length, move outside of loop
             double x_point = x_add_on+target_x/N;
             double y_point = s(x_point);
 
@@ -218,13 +211,13 @@ int main() {
             x_point += ref_x;
             y_point += ref_y;
 
-            next_x_vals.push_back(x_point);
-            next_y_vals.push_back(y_point);
+            interpolated_points_x.push_back(x_point);
+            interpolated_points_y.push_back(y_point);
           }
 
           json msgJson;
-          msgJson["next_x"] = next_x_vals;
-          msgJson["next_y"] = next_y_vals;
+          msgJson["next_x"] = interpolated_points_x;
+          msgJson["next_y"] = interpolated_points_y;
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
