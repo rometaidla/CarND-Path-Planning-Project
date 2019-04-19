@@ -99,7 +99,7 @@ int main() {
           }
 
           bool too_close = false;
-
+          double safety_distance = 30.0; // todo: make constant or better relative to vehicles speed
           for (int i = 0; i < sensor_fusion.size(); i++) {
             float d = sensor_fusion[i][6];
 
@@ -110,7 +110,7 @@ int main() {
                 double other_vehicle_s = sensor_fusion[i][5]; 
 
                 double other_vehicle_projected_s = other_vehicle_s + (double)prev_size * .02 * other_vehicle_velocity;
-                if (other_vehicle_projected_s > car_s && other_vehicle_projected_s-car_s < 30) {
+                if (other_vehicle_projected_s > car_s && other_vehicle_projected_s-car_s < safety_distance) {
                     too_close = true;
                 }
             }
@@ -167,8 +167,8 @@ int main() {
             anchor_points_x.push_back(anchor_point[0]);
             anchor_points_y.push_back(anchor_point[1]);  
           }
-          
-          for (int i = 0; i <  anchor_points_x.size(); i++) {
+
+          for (int i = 0; i <  anchor_points_x.size(); i++) { // todo: remove double loop over anchor points
             // shift car reference angle to 0 degrees
             double shift_x = anchor_points_x[i]-ref_x;
             double shift_y = anchor_points_y[i]-ref_y;
