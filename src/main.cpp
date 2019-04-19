@@ -6,12 +6,15 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
+#include "vehicle.h"
 #include "trajectory_generator.h"
+#include "behavior_planner.h"
 
 // for convenience
 using nlohmann::json;
 using std::string;
 using std::vector;
+using namespace std;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -113,37 +116,44 @@ int main() {
             car_s = end_path_s;
           }
 
-          bool too_close = false;
-          double safety_distance = 30.0; // todo: make constant or better relative to vehicles speed
+          // PARSE SENSOR FUSION DATA 
+          vector<Vehicle> other_vehicles;
           for (int i = 0; i < sensor_fusion.size(); i++) {
-            float d = sensor_fusion[i][6];
-
-            if (d < (2+4*lane+2) && d > (2+4*lane-2)) {
-                double vx = sensor_fusion[i][3];
-                double vy = sensor_fusion[i][4];
-                double other_vehicle_velocity = sqrt(vx*vx+vy*vy);
-                double other_vehicle_s = sensor_fusion[i][5]; 
-
-                double other_vehicle_projected_s = other_vehicle_s + (double)prev_size * .02 * other_vehicle_velocity;
-                if (other_vehicle_projected_s > car_s && other_vehicle_projected_s-car_s < safety_distance) {
-                    too_close = true;
-                }
-            }
+            double velocity_x = sensor_fusion[i][3];
+            double velocity_y = sensor_fusion[i][4];
+            double s = sensor_fusion[i][5];
+            double d = sensor_fusion[i][6];
+            Vehicle vehicle = Vehicle(velocity_x, velocity_y, s, d);
+            other_vehicles.push_back(vehicle);
           }
 
-          if (too_close) { // todo: remove magic value
-            ref_vel -= .224;
-          }
-          else if (ref_vel < 49.5) { // todo: remove magic value
-            ref_vel += .224;
+          cout << "**** FINDING BEST TRAJECTORY ****" << endl;
+          vector<double> candidate_velocities = { ref_vel+0.50, ref_vel+0.25, ref_vel, ref_vel-0.25, ref_vel-0.50};
+
+          TrajectoryGenerator trajectory_generator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
+          BehaviorPlanner behavior_planner = BehaviorPlanner();
+          double current_minimal_cost = -1.0;
+          vector<vector<double>> current_best_trajectory; // TODO: create trajectory class
+          for (int i = 0; i < candidate_velocities.size(); i++) {
+            double candidate_velocity = candidate_velocities[i];
+            vector<vector<double>> candidate_trajectory = trajectory_generator.generateTrajectory(car_x, car_y, car_yaw, car_s, lane, candidate_velocity, previous_path);
+            double candidate_trajectory_cost = behavior_planner.calculateCost(candidate_trajectory, other_vehicles, 
+              prev_size, lane, car_s, candidate_velocity);
+
+            cout << "Candidate trajectory: velocity=" << candidate_velocity << ", cost=" << candidate_trajectory_cost << endl;
+
+            if (current_minimal_cost < 0.0 || candidate_trajectory_cost < current_minimal_cost) {
+              current_minimal_cost = candidate_trajectory_cost;
+              current_best_trajectory = candidate_trajectory;
+              ref_vel = candidate_velocity; 
+            } 
           }
 
-          TrajectoryGenerator trajectoryGenerator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
-          vector<vector<double>> trajectory = trajectoryGenerator.generateTrajectory(car_x, car_y, car_yaw, car_s, lane, ref_vel, previous_path);
+          cout << "best trajectory with cost=" << current_minimal_cost << endl;
 
           json msgJson;
-          msgJson["next_x"] = trajectory[0];
-          msgJson["next_y"] = trajectory[1];
+          msgJson["next_x"] = current_best_trajectory[0];
+          msgJson["next_y"] = current_best_trajectory[1];
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 

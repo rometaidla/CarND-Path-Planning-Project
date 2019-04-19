@@ -1,5 +1,5 @@
-#ifndef TRAJECTORY_GENERATOR_H_
-#define TRAJECTORY_GENERATOR_H_
+#ifndef TRAJECTORY_GENERATOR_H
+#define TRAJECTORY_GENERATOR_H
 
 #include <vector>
 
@@ -16,4 +16,4 @@ public:
 	vector<double> map_waypoints_s;
 };
 
-#endif /* TRAJECTORY_GENERATOR_H_ */
+#endif /* TRAJECTORY_GENERATOR_H */
