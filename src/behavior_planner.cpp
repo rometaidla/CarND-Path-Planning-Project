@@ -31,7 +31,7 @@ double BehaviorPlanner::calculateCost(vector<vector<double>> trajectory, vector<
 	}
 
 	// SPEED LIMIT
-	if (velocity > 49.5) {
+	if (velocity > (SPEED_LIMIT - 0.5)) {
 		cost += 100.0;
 	}
 
