@@ -15,13 +15,16 @@ BehaviorPlanner::BehaviorPlanner(double ref_vel, int lane) {
 void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
 	TrajectoryGenerator trajectory_generator, vector<vector<double>> previous_path) {
 	cout << "**** PLANNING TRAJECTORY ****" << endl;
-	vector<double> candidate_velocities = { /*ref_vel+0.50,*/ ref_vel+0.25, 
-		ref_vel, ref_vel-0.25/*, ref_vel-0.50*/};
+	vector<double> candidate_velocities = { ref_vel+0.50, ref_vel+0.25, 
+		ref_vel, ref_vel-0.25, ref_vel-0.50};
 	
-	vector<int> candidate_lanes = { ego_vehicle.lane };
+	vector<int> candidate_lanes;
 	if (ego_vehicle.lane-1 >= 0) {
 		candidate_lanes.push_back(ego_vehicle.lane-1);
 	}
+	
+	candidate_lanes.push_back(ego_vehicle.lane);
+
 	if (ego_vehicle.lane+1 <= 2) {
 		candidate_lanes.push_back(ego_vehicle.lane+1);
 	}
@@ -56,8 +59,10 @@ double BehaviorPlanner::calculateCost(Vehicle ego_vehicle, vector<Vehicle> other
 	
 	double cost = 0;
 
-	// COLLISION
-	double safety_distance = 30.0; // todo: make constant or better relative to vehicles speed
+	// COLLISION & LINE SELECTION
+	double safety_distance_front = 30.0; // todo: make constant or better relative to vehicles speed
+	double safety_distance_back = 20.0; // smaller safety distance, so line changes would be more easily available
+	
 	for (int i = 0; i < other_vehicles.size(); i++) {
 		Vehicle other_vehicle = other_vehicles[i];
 		
@@ -65,33 +70,25 @@ double BehaviorPlanner::calculateCost(Vehicle ego_vehicle, vector<Vehicle> other
 		bool is_lane_change = ego_vehicle.lane != candidate_lane;
 
 		if (!is_lane_change && other_vehicle.lane == candidate_lane) {
-		    if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance) {
+		    if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance_front) {
 		        cost += candidate_velocity * 100;
 		    }
 		}
 
 		if (is_lane_change && other_vehicle.lane == candidate_lane) {
-			if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance) {
+			if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance_front) {
 		        cost += candidate_velocity * 200;
 		    }
 
-		    if (other_vehicle_projected_s < ego_vehicle.s && ego_vehicle.s-other_vehicle_projected_s < safety_distance) {
+		    if (other_vehicle_projected_s < ego_vehicle.s && ego_vehicle.s-other_vehicle_projected_s < safety_distance_back) {
 		        cost += candidate_velocity * 200;
 		    }
-		}
 
-		/*if (is_lane_change && other_vehicle.lane == candidate_lane) {
-		    if (other_vehicle_projected_s-ego_vehicle.s > safety_distance || 
-		    	ego_vehicle.s-other_vehicle_projected_s > safety_distance) {
-		        cost += ego_vehicle.velocity * 200;
-		    }
-		}	*/
-		/*if (other_vehicle.lane == candidate_lane) { // car is in target lane
-			double distance_to_vehicle = other_vehicle_projected_s-ego_vehicle.s;
-			if (other_vehicle_projected_s > ego_vehicle.s && distance_to_vehicle < safety_distance) {
-				cost += candidate_velocity * 100;	
+		    // PREFER EMPTY LANES
+			if (other_vehicle_projected_s > ego_vehicle.s) {
+				cost += 10 * (other_vehicle_projected_s-ego_vehicle.s);
 			}
-		}*/
+		}
 	}
 
 	// PREFER FASTER SPEED
