@@ -134,7 +134,8 @@ int main() {
             double velocity = sqrt(velocity_x*velocity_x+velocity_y*velocity_y);
             double s = sensor_fusion[i][5];
             double d = sensor_fusion[i][6];
-            Vehicle vehicle = Vehicle(x, y, car_yaw, velocity, s, d); // todo: fix yaw
+            double yaw = atan2(velocity_y, velocity_x);
+            Vehicle vehicle = Vehicle(x, y, car_yaw, velocity, s, d);
             other_vehicles.push_back(vehicle);
           }
 

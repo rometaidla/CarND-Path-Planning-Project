@@ -18,8 +18,8 @@ public:
 	void plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, int current_lane, 
 		TrajectoryGenerator trajectory_generator, vector<vector<double>> previous_path);
 
-	double calculateCost(vector<vector<double>> trajectory, vector<Vehicle> other_vehicles, 
-		int prev_size, int lane, double car_s, double velocity);
+	double calculateCost(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
+		int prev_size, int candidate_lane, double candidate_velocity);
 };
 
 #endif /* BEHAVIOR_PLANNER_H */
