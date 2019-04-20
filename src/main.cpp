@@ -110,21 +110,15 @@ int main() {
           auto sensor_fusion = j[1]["sensor_fusion"];
 
           int prev_size = previous_path_x.size();
-          
-          // TODO: maybe just taking 8-10 from previous path would be enough
-          // this would make model more reactive
 
-          //cout << "prev_size: " << prev_size << endl;
-          vector<vector<double>> previous_path = { previous_path_x, previous_path_y };
+
 
           if (prev_size > 0) {
             car_s = end_path_s;
           }
 
+          // Parse vehicles data
           Vehicle ego_vehicle = Vehicle(car_x, car_y, car_yaw, car_speed, car_s, car_d);
-
-          // TODO: refactor to separate class
-          // PARSE SENSOR FUSION DATA
           vector<Vehicle> other_vehicles;
           for (int i = 0; i < sensor_fusion.size(); i++) {
             double x = sensor_fusion[i][1];
@@ -141,7 +135,7 @@ int main() {
 
           TrajectoryGenerator trajectory_generator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
           BehaviorPlanner behavior_planner = BehaviorPlanner(ref_vel, lane);
-          behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, trajectory_generator, previous_path);
+          behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, trajectory_generator, { previous_path_x, previous_path_y });
 
           // STORE RESULT
           json msgJson;
