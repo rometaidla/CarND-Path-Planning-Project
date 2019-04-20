@@ -7,9 +7,8 @@
 using std::string;
 using namespace std;
 
-BehaviorPlanner::BehaviorPlanner(double ref_vel, int lane) {
-	this->ref_vel = ref_vel; // TODO: should be store in vehicle object
-	this->lane = lane;
+BehaviorPlanner::BehaviorPlanner(double ref_vel) {
+	this->ref_vel = ref_vel;
 }
 
 void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
@@ -38,7 +37,6 @@ void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other
 			this->best_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s, 
 				candidate_lane_d, candidate_velocity, previous_path);		  
 		    this->ref_vel = candidate_velocity;
-		    this->lane = candidate_lane; 
 		  } 
 		}
 	}

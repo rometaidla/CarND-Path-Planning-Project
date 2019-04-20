@@ -69,10 +69,9 @@ int main() {
   }
 
   double ref_vel = 0.0; // mph
-  int lane = 1;
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &lane]
+               &map_waypoints_dx,&map_waypoints_dy, &ref_vel]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -134,7 +133,7 @@ int main() {
           }
 
           TrajectoryGenerator trajectory_generator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
-          BehaviorPlanner behavior_planner = BehaviorPlanner(ref_vel, lane);
+          BehaviorPlanner behavior_planner = BehaviorPlanner(ref_vel);
           behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, trajectory_generator, { previous_path_x, previous_path_y });
 
           // STORE RESULT
@@ -142,7 +141,6 @@ int main() {
           msgJson["next_x"] = behavior_planner.best_trajectory[0];
           msgJson["next_y"] = behavior_planner.best_trajectory[1];
           ref_vel = behavior_planner.ref_vel;
-          lane = behavior_planner.lane;
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 

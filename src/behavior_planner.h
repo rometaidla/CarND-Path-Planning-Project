@@ -9,10 +9,9 @@ using std::vector;
 
 class BehaviorPlanner {
 public:
-	BehaviorPlanner(double ref_vel, int lane);
+	BehaviorPlanner(double ref_vel);
 
 	double ref_vel;
-	int lane;
 	vector<vector<double>> best_trajectory;
 
 	void plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
