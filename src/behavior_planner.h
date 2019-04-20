@@ -3,12 +3,21 @@
 
 #include <vector>
 #include "vehicle.h"
+#include "trajectory_generator.h"
 
 using std::vector;
 
 class BehaviorPlanner {
 public:
-	BehaviorPlanner();
+	BehaviorPlanner(double ref_vel, int lane);
+
+	double ref_vel;
+	int lane;
+	vector<vector<double>> best_trajectory;
+
+	void plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, int current_lane, 
+		TrajectoryGenerator trajectory_generator, vector<vector<double>> previous_path);
+
 	double calculateCost(vector<vector<double>> trajectory, vector<Vehicle> other_vehicles, 
 		int prev_size, int lane, double car_s, double velocity);
 };

@@ -134,47 +134,16 @@ int main() {
             other_vehicles.push_back(vehicle);
           }
 
-          cout << "**** FINDING BEST TRAJECTORY ****" << endl;
-          vector<double> candidate_velocities = { ref_vel+0.50, ref_vel+0.25, ref_vel, ref_vel-0.25, ref_vel-0.50};
-          vector<int> candidate_lanes = {lane};
-          if (lane-1 >= 0) {
-            candidate_lanes.push_back(lane-1);
-          }
-          if (lane+1 <= 2) {
-            candidate_lanes.push_back(lane+1);
-          }
-
           TrajectoryGenerator trajectory_generator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
-          BehaviorPlanner behavior_planner = BehaviorPlanner();
-          double current_minimal_cost = -1.0;
-          vector<vector<double>> current_best_trajectory; // TODO: create trajectory class
+          BehaviorPlanner behavior_planner = BehaviorPlanner(ref_vel, lane);
+          behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, lane, trajectory_generator, previous_path);
 
-          for (int l = 0; l < candidate_lanes.size(); l++) {
-            int candidate_lane = candidate_lanes[l];
-
-            for (int i = 0; i < candidate_velocities.size(); i++) {
-              double candidate_velocity = candidate_velocities[i];
-              vector<vector<double>> candidate_trajectory = trajectory_generator.generateTrajectory(car_x, car_y, car_yaw, car_s, candidate_lane, candidate_velocity, previous_path);
-              double candidate_trajectory_cost = behavior_planner.calculateCost(candidate_trajectory, other_vehicles, 
-                prev_size, candidate_lane, car_s, candidate_velocity);
-
-              cout << "Candidate trajectory: velocity=" << candidate_velocity << ", lane=" << candidate_lane << ", cost=" << candidate_trajectory_cost << endl;
-
-              if (current_minimal_cost < 0.0 || candidate_trajectory_cost < current_minimal_cost) {
-                current_minimal_cost = candidate_trajectory_cost;
-                current_best_trajectory = candidate_trajectory;
-                ref_vel = candidate_velocity;
-                lane = candidate_lane; 
-              } 
-            }
-
-          }
-
-          //cout << "best trajectory with cost=" << current_minimal_cost << endl;
-
+          // STORE RESULT
           json msgJson;
-          msgJson["next_x"] = current_best_trajectory[0];
-          msgJson["next_y"] = current_best_trajectory[1];
+          msgJson["next_x"] = behavior_planner.best_trajectory[0];
+          msgJson["next_y"] = behavior_planner.best_trajectory[1];
+          ref_vel = behavior_planner.ref_vel;
+          lane = behavior_planner.lane;
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
