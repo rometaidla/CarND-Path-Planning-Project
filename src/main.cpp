@@ -110,6 +110,11 @@ int main() {
           auto sensor_fusion = j[1]["sensor_fusion"];
 
           int prev_size = previous_path_x.size();
+          
+          // TODO: maybe just taking 8-10 from previous path would be enough
+          // this would make model more reactive
+
+          //cout << "prev_size: " << prev_size << endl;
           vector<vector<double>> previous_path = { previous_path_x, previous_path_y };
 
           if (prev_size > 0) {
@@ -127,7 +132,7 @@ int main() {
             other_vehicles.push_back(vehicle);
           }
 
-          cout << "**** FINDING BEST TRAJECTORY ****" << endl;
+          //cout << "**** FINDING BEST TRAJECTORY ****" << endl;
           vector<double> candidate_velocities = { ref_vel+0.50, ref_vel+0.25, ref_vel, ref_vel-0.25, ref_vel-0.50};
           vector<int> candidate_lanes = {lane};
           if (lane-1 >= 0) {
@@ -151,7 +156,7 @@ int main() {
               double candidate_trajectory_cost = behavior_planner.calculateCost(candidate_trajectory, other_vehicles, 
                 prev_size, candidate_lane, car_s, candidate_velocity);
 
-              cout << "Candidate trajectory: velocity=" << candidate_velocity << ", lane=" << candidate_lane << ", cost=" << candidate_trajectory_cost << endl;
+              //cout << "Candidate trajectory: velocity=" << candidate_velocity << ", lane=" << candidate_lane << ", cost=" << candidate_trajectory_cost << endl;
 
               if (current_minimal_cost < 0.0 || candidate_trajectory_cost < current_minimal_cost) {
                 current_minimal_cost = candidate_trajectory_cost;
@@ -163,7 +168,7 @@ int main() {
 
           }
 
-          cout << "best trajectory with cost=" << current_minimal_cost << endl;
+          //cout << "best trajectory with cost=" << current_minimal_cost << endl;
 
           json msgJson;
           msgJson["next_x"] = current_best_trajectory[0];

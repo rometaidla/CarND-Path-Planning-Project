@@ -24,7 +24,7 @@ double BehaviorPlanner::calculateCost(vector<vector<double>> trajectory, vector<
 		    double other_vehicle_projected_s = other_vehicle.s + (double)prev_size * SIMULATOR_DT * other_vehicle.velocity;
 		    double distance_to_car_in_front = other_vehicle_projected_s-car_s;
 		    if (other_vehicle_projected_s > car_s && distance_to_car_in_front < safety_distance) {
-		    	cout << "WARNING: vehicle on same lane: distance=" << distance_to_car_in_front << endl;
+		    	//cout << "WARNING: vehicle on same lane: distance=" << distance_to_car_in_front << endl;
 		        cost += velocity * 100;
 		    }
 		}
@@ -34,6 +34,8 @@ double BehaviorPlanner::calculateCost(vector<vector<double>> trajectory, vector<
 	if (velocity > (SPEED_LIMIT - 0.5)) {
 		cost += 100.0;
 	}
+
+	// PREFER FREE LANES
 
 	return cost;
 }
