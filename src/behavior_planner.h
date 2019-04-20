@@ -15,7 +15,7 @@ public:
 	int lane;
 	vector<vector<double>> best_trajectory;
 
-	void plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, int current_lane, 
+	void plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
 		TrajectoryGenerator trajectory_generator, vector<vector<double>> previous_path);
 
 	double calculateCost(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 

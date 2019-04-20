@@ -141,7 +141,7 @@ int main() {
 
           TrajectoryGenerator trajectory_generator = TrajectoryGenerator(map_waypoints_x, map_waypoints_y, map_waypoints_s);
           BehaviorPlanner behavior_planner = BehaviorPlanner(ref_vel, lane);
-          behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, lane, trajectory_generator, previous_path);
+          behavior_planner.plan_trajectory(ego_vehicle, other_vehicles, trajectory_generator, previous_path);
 
           // STORE RESULT
           json msgJson;

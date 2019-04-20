@@ -12,25 +12,23 @@ BehaviorPlanner::BehaviorPlanner(double ref_vel, int lane) {
 	this->lane = lane;
 }
 
-void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, int current_lane, 
+void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, 
 	TrajectoryGenerator trajectory_generator, vector<vector<double>> previous_path) {
-	//cout << "**** FINDING BEST TRAJECTORY ****" << endl;
+	cout << "**** PLANNING TRAJECTORY ****" << endl;
 	vector<double> candidate_velocities = { /*ref_vel+0.50,*/ ref_vel+0.25, 
 		ref_vel, ref_vel-0.25/*, ref_vel-0.50*/};
 	
-	vector<int> candidate_lanes = { current_lane };
-	if (current_lane-1 >= 0) {
-		candidate_lanes.push_back(current_lane-1);
+	vector<int> candidate_lanes = { ego_vehicle.lane };
+	if (ego_vehicle.lane-1 >= 0) {
+		candidate_lanes.push_back(ego_vehicle.lane-1);
 	}
-	if (current_lane+1 <= 2) {
-		candidate_lanes.push_back(current_lane+1);
+	if (ego_vehicle.lane+1 <= 2) {
+		candidate_lanes.push_back(ego_vehicle.lane+1);
 	}
 
 	int prev_size = previous_path[0].size();
 
 	double current_minimal_cost = -1.0;
-
-	cout << "ego vehicle d=" << ego_vehicle.d << ", s=" << ego_vehicle.s << endl;
 
 	for (int l = 0; l < candidate_lanes.size(); l++) {
 		int candidate_lane = candidate_lanes[l];
@@ -40,6 +38,7 @@ void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other
 		  double candidate_trajectory_cost = this->calculateCost(ego_vehicle, other_vehicles, 
 		    prev_size, candidate_lane, candidate_velocity);
 
+		  cout << "Candidate trajectory: canidate_lane=" << candidate_lane << ", candidate_velocity=" << candidate_velocity << ", cost=" << candidate_trajectory_cost << endl; 
 		  if (current_minimal_cost < 0.0 || candidate_trajectory_cost < current_minimal_cost) {
 		    current_minimal_cost = candidate_trajectory_cost;
 		    
@@ -55,27 +54,52 @@ void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other
 
 double BehaviorPlanner::calculateCost(Vehicle ego_vehicle, vector<Vehicle> other_vehicles, int prev_size, int candidate_lane, double candidate_velocity) {
 	
-	double cost = 50 - candidate_velocity;
+	double cost = 0;
 
 	// COLLISION
 	double safety_distance = 30.0; // todo: make constant or better relative to vehicles speed
 	for (int i = 0; i < other_vehicles.size(); i++) {
 		Vehicle other_vehicle = other_vehicles[i];
 		
-		// SAFETY FRONT
 		double other_vehicle_projected_s = other_vehicle.s + (double)prev_size * SIMULATOR_DT * other_vehicle.velocity;
+		bool is_lane_change = ego_vehicle.lane != candidate_lane;
 
-		if (other_vehicle.lane == candidate_lane) { // car is in target lane
-			double distance_to_vehicle = other_vehicle_projected_s-ego_vehicle.s;
-		    if (other_vehicle_projected_s > ego_vehicle.s && distance_to_vehicle < safety_distance) {
-		        cost += distance_to_vehicle * 100;
+		if (!is_lane_change && other_vehicle.lane == candidate_lane) {
+		    if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance) {
+		        cost += candidate_velocity * 100;
 		    }
-		}	
+		}
+
+		if (is_lane_change && other_vehicle.lane == candidate_lane) {
+			if (other_vehicle_projected_s > ego_vehicle.s && other_vehicle_projected_s-ego_vehicle.s < safety_distance) {
+		        cost += candidate_velocity * 200;
+		    }
+
+		    if (other_vehicle_projected_s < ego_vehicle.s && ego_vehicle.s-other_vehicle_projected_s < safety_distance) {
+		        cost += candidate_velocity * 200;
+		    }
+		}
+
+		/*if (is_lane_change && other_vehicle.lane == candidate_lane) {
+		    if (other_vehicle_projected_s-ego_vehicle.s > safety_distance || 
+		    	ego_vehicle.s-other_vehicle_projected_s > safety_distance) {
+		        cost += ego_vehicle.velocity * 200;
+		    }
+		}	*/
+		/*if (other_vehicle.lane == candidate_lane) { // car is in target lane
+			double distance_to_vehicle = other_vehicle_projected_s-ego_vehicle.s;
+			if (other_vehicle_projected_s > ego_vehicle.s && distance_to_vehicle < safety_distance) {
+				cost += candidate_velocity * 100;	
+			}
+		}*/
 	}
+
+	// PREFER FASTER SPEED
+	cost += (SPEED_LIMIT - candidate_velocity) * 10.0;
 
 	// SPEED LIMIT
 	if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
-		cost += 100.0;
+		cost += 1000.0;
 	}
 
 	// PREFER MIDDLE LANE
