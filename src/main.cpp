@@ -121,6 +121,8 @@ int main() {
             car_s = end_path_s;
           }
 
+          Vehicle ego_vehicle = Vehicle(car_x, car_y, car_yaw, car_speed, car_s, car_d);
+
           // PARSE SENSOR FUSION DATA 
           vector<Vehicle> other_vehicles;
           for (int i = 0; i < sensor_fusion.size(); i++) {
@@ -132,7 +134,7 @@ int main() {
             other_vehicles.push_back(vehicle);
           }
 
-          //cout << "**** FINDING BEST TRAJECTORY ****" << endl;
+          cout << "**** FINDING BEST TRAJECTORY ****" << endl;
           vector<double> candidate_velocities = { ref_vel+0.50, ref_vel+0.25, ref_vel, ref_vel-0.25, ref_vel-0.50};
           vector<int> candidate_lanes = {lane};
           if (lane-1 >= 0) {
@@ -156,7 +158,7 @@ int main() {
               double candidate_trajectory_cost = behavior_planner.calculateCost(candidate_trajectory, other_vehicles, 
                 prev_size, candidate_lane, car_s, candidate_velocity);
 
-              //cout << "Candidate trajectory: velocity=" << candidate_velocity << ", lane=" << candidate_lane << ", cost=" << candidate_trajectory_cost << endl;
+              cout << "Candidate trajectory: velocity=" << candidate_velocity << ", lane=" << candidate_lane << ", cost=" << candidate_trajectory_cost << endl;
 
               if (current_minimal_cost < 0.0 || candidate_trajectory_cost < current_minimal_cost) {
                 current_minimal_cost = candidate_trajectory_cost;

@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "vehicle.h"
+
 using std::vector;
 
 class TrajectoryGenerator {
