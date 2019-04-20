@@ -123,14 +123,18 @@ int main() {
 
           Vehicle ego_vehicle = Vehicle(car_x, car_y, car_yaw, car_speed, car_s, car_d);
 
-          // PARSE SENSOR FUSION DATA 
+          // TODO: refactor to separate class
+          // PARSE SENSOR FUSION DATA
           vector<Vehicle> other_vehicles;
           for (int i = 0; i < sensor_fusion.size(); i++) {
+            double x = sensor_fusion[i][1];
+            double y = sensor_fusion[i][2];
             double velocity_x = sensor_fusion[i][3];
             double velocity_y = sensor_fusion[i][4];
+            double velocity = sqrt(velocity_x*velocity_x+velocity_y*velocity_y);
             double s = sensor_fusion[i][5];
             double d = sensor_fusion[i][6];
-            Vehicle vehicle = Vehicle(velocity_x, velocity_y, s, d);
+            Vehicle vehicle = Vehicle(x, y, car_yaw, velocity, s, d); // todo: fix yaw
             other_vehicles.push_back(vehicle);
           }
 

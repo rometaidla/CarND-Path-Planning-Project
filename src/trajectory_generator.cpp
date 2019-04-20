@@ -12,7 +12,7 @@ TrajectoryGenerator::TrajectoryGenerator(vector<double> map_waypoints_x, vector<
 	this->map_waypoints_s = map_waypoints_s;
 }
 
-vector<vector<double>> TrajectoryGenerator::generateTrajectory(double car_x, double car_y, double car_yaw, double car_s, int lane, double reference_velocity, vector<vector<double>> previous_path) {
+vector<vector<double>> TrajectoryGenerator::generateTrajectory(double car_x, double car_y, double car_yaw, double car_s, double target_d, double reference_velocity, vector<vector<double>> previous_path) {
 	
 	vector<double> previous_path_x = previous_path[0];
 	vector<double> previous_path_y = previous_path[1];
@@ -58,7 +58,7 @@ vector<vector<double>> TrajectoryGenerator::generateTrajectory(double car_x, dou
 	int anchor_points_spacing = 30;
 	for (int i = 1; i <= anchor_points_count; i++) {
 		int anchor_point_s = car_s + i*anchor_points_spacing;
-		vector<double> anchor_point = getXY(anchor_point_s, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+		vector<double> anchor_point = getXY(anchor_point_s, target_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
 		anchor_points_x.push_back(anchor_point[0]);
 		anchor_points_y.push_back(anchor_point[1]);  
 	}

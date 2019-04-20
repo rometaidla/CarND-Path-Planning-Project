@@ -30,14 +30,20 @@ void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other
 
 	double current_minimal_cost = -1.0;
 
+	/*for (int i = 0; i < other_vehicles.size(); i++) {
+		Vehicle other_vehicle = other_vehicles[i];
+		trajectory_generator.generateTrajectory(other_vehicle.x, other_vehicle.y, other_vehicle.yaw, other_vehicle.s, 
+			  	current_lane, candidate_velocity, previous_path)*/
+
 	for (int l = 0; l < candidate_lanes.size(); l++) {
 		int candidate_lane = candidate_lanes[l];
 
 		for (int i = 0; i < candidate_velocities.size(); i++) {
 		  double candidate_velocity = candidate_velocities[i];
 		  
+		  double candidate_lane_d = 2+4*candidate_lane; // TODO: refactor
 		  vector<vector<double>> candidate_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s, 
-		  	current_lane, candidate_velocity, previous_path);
+		  	candidate_lane_d, candidate_velocity, previous_path);
 		  
 		  double candidate_trajectory_cost = this->calculateCost(candidate_trajectory, other_vehicles, 
 		    prev_size, candidate_lane, ego_vehicle.s, candidate_velocity);
