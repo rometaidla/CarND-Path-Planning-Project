@@ -65,9 +65,9 @@ For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculat
 1. **Faster speed is preferred** [line 68](./src/behavior_planner.cpp#L68)
 2. **Speed limit is honoured**, with adding very high cost to speeds above the limit [lines 71-73](./src/behavior_planner.cpp#L71)
 3. **Keep safety distance to a vehicle in front** on the same lane by giving higher cost to trajectory candidates with higher speed [lines 85-91](./src/behavior_planner.cpp#L85)
-4. **Keep safety distance to vehicle in beside lanes**, higher cost is given to vehicles on beside lanes, than vehicle on the same lane, so that ego vehicle would not start to change lanes when surrounded with vehicles and would instead start to slow down (see rule 3). [lines 95-103](./src/behavior_planner.cpp#L93)
+4. **Keep safety distance to vehicle in adjacent lanes**, higher cost is given to vehicles on adjacent lanes, than vehicle on the same lane, so that ego vehicle would not start to change lanes when surrounded with vehicles and would instead start to slow down (see rule 3). [lines 95-103](./src/behavior_planner.cpp#L93)
 5. **Prefer empty space** by adding up a cost for every vehicle on candidate lane, very important when choosing whether to take right or left lane change [lines 105-108](./src/behavior_planner.cpp#L105)
-6. **Middle lane is preferred** as it has more options (switch lane right and left) [line 113](./src/behavior_planner.cpp#L113)
+6. **Middle lane is preferred** as it has more options for switching lanes [line 113](./src/behavior_planner.cpp#L113)
 
 ### Trajectory generation
 
@@ -77,7 +77,7 @@ Udacity project Q&A video.
 Previous path coordinates (trajectory not consumed yet by simulator) are used as starting point for generating new trajectory,
 this causes trajectory transitions to be smooth. See `trajectory_generator.cpp` [lines 30-55](./src/trajectory_generator.cpp#L55).
 
-3 anchor points spaced by 30 in s and d coordinates are used to define a spline `trajectory_generator.cpp` [lines 57-74](./src/trajectory_generator.cpp#L57):
+3 anchor points spaced by 30 in Frenet coordinates are used to define a spline `trajectory_generator.cpp` [lines 57-74](./src/trajectory_generator.cpp#L57):
 
 ```c++
 int anchor_points_count = 3;
@@ -100,7 +100,7 @@ s.set_points(anchor_points_x, anchor_points_y);
 ...
 
 for (int i = 1; i <= 50-previous_path_x.size(); i++) {
-    double N = target_dist / (.02*reference_velocity/2.24); // todo: rename step length, move outside of loop
+    double N = target_dist / (.02*reference_velocity/2.24);
     double x_point = x_add_on+target_x/N;
     double y_point = s(x_point);
 
@@ -111,7 +111,7 @@ for (int i = 1; i <= 50-previous_path_x.size(); i++) {
 }
 ```
 
-For simplifying calculation, car reference angle is shifted to 0 and result is shifted back to original yaw.
+For simplifying calculation, car reference angle is shifted to 0 degrees and afterwards result is shifted back to original yaw.
 
 ### Rubric criterias
 
@@ -129,7 +129,7 @@ Screenshot of car driving 10.26 miles without incidents:
 
 #### The car drives according to the speed limit.
 
-The car drives according to speed limit, because exceeding speed limit is given highest cost in 
+The car drives according to speed limit, because candidate trajectories that exceed speed limit is given highest cost in 
 `trajectory_generator.cpp` [lines 71-73](./src/behavior_planner.cpp#L71):
 
 ```c++
@@ -160,13 +160,13 @@ double y_point = s(x_point);
 
 #### Car does not have collisions.
 
-Car avoids collisions by car keeping safety distance with other vehicles. This is achieved by having high cost for
+Car avoids collisions by keeping safety distance with other vehicles. This is achieved by having higher cost for
 candidate trajectories that have ego vehicle close to other vehicles. 
 See `behaviour_planner.cpp` [lines 85-103](./src/behavior_planner.cpp#L71).
 
 #### The car stays in its lane, except for the time between changing lanes.
 
-The car stays in its lane because generate trajectory target point in Frenet is defined to be in a middle of lane 
+The car stays in its lane because generated trajectory target point in Frenet is defined to be in a middle of lane 
 `behaviour_planner.cpp` [line 36](./src/behavior_planner.cpp#L36):
 
 ```c++
@@ -175,8 +175,8 @@ double candidate_lane_d = 4*LANE_WIDTH + LANE_WIDTH/2;
 
 #### The car is able to change lanes
 
-Candidate trajectories with lane changes is created and cost is calculate for them. When cost for trajectories with
-lane changes is lower than current lane, vehicle changes lane. See `behaviour_planner.cpp` [line 49-61](./src/behavior_planner.cpp#L49).
+Candidate trajectories with all possible lane changes is created and cost is calculate for them. When cost for trajectories with
+lane changes is lower than keeping current lane, vehicle changes lane. See `behaviour_planner.cpp` [line 49-61](./src/behavior_planner.cpp#L49).
    
 ## How to use
 
