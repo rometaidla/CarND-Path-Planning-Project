@@ -64,7 +64,7 @@ New source files were added to `CMakeList.txt`, but project should still compile
 
 Screenshot of car driving 10.26 miles without incidents:
 
-![No incidents image](/images/no-incidents.png){:width="100px"}
+![No incidents image](/images/no-incidents.png)
 
 #### The car drives according to the speed limit.
 
