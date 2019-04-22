@@ -1,5 +1,42 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
+
+## Behavior planner
+
+Behavior planner first creates candidate trajectories with different speed and highway lanes:
+```c++
+vector<double> candidate_velocities = generate_candidate_velocities();
+vector<int> candidate_lanes = generate_candidate_lanes(ego_vehicle);
+```
+
+Cost is calculated for each candidate:
+
+```c++
+double candidate_trajectory_cost = this->calculateCost(ego_vehicle, other_vehicles, 
+		    previous_path[0].size(), candidate_lane, candidate_velocity);
+```
+
+Candidate trajectory with lowest cost is chosen and full trajectory with x and y coordinates is generated.
+
+```c++
+this->best_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s, 
+				candidate_lane_d, candidate_velocity, previous_path);	
+```
+
+Currently cost calculation doesn't need full trajectory coordinates, hence it is generated only in the end for best 
+trajectory. When full trajectory would be needed for cost calculation, trajectory would be needed to created for every
+candidate.
+
+## Cost calculation
+
+For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculateCost` [lines 63-118](./src/behavior_planner.cpp#L63) by following rules:
+
+1. **Faster speed is preferred** [line 68](./src/behavior_planner.cpp#L68)
+2. **Speed limit is honoured**, with adding very high cost to speeds above the limit [lines 71-73](./src/behavior_planner.cpp#L71)
+3. **Keep safety distance to a vehicle in front** on the same lane by giving higher cost to trajectory candidates with higher speed [lines 85-91](./src/behavior_planner.cpp#L85)
+4. **Keep safety distance to vehicle in beside lanes**, higher cost is given to vehicles on beside lanes, than vehicle on the same lane, so that ego vehicle would not start to change lanes when surrounded with vehicles and would instead start to slow down (see rule 3). [lines 95-103](./src/behavior_planner.cpp#L93)
+5. **Prefer empty space** by adding up a cost for every vehicle on candidate lane, very important when choosing whether to take right or left lane change [lines 105-108](./src/behavior_planner.cpp#L105)
+6. **Middle lane is preferred** as it has more options (switch lane right and left) [line 113](./src/behavior_planner.cpp#L113)
    
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  

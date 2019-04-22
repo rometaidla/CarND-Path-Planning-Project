@@ -64,6 +64,14 @@ double BehaviorPlanner::calculateCost(Vehicle ego_vehicle, vector<Vehicle> other
 	
 	double cost = 0;
 
+	// Faster speed is preferred
+	cost += (SPEED_LIMIT - candidate_velocity) * 10.0;
+
+	// Speed limit is honored
+	if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
+		cost += 1000.0;
+	}
+
 	// Collision with other vehicles and line selection
 	double safety_distance_front = 30.0; // todo: make constant or better relative to vehicles speed
 	double safety_distance_back = 20.0; // smaller safety distance, so line changes would be more easily available
@@ -99,14 +107,6 @@ double BehaviorPlanner::calculateCost(Vehicle ego_vehicle, vector<Vehicle> other
 				cost += 10 * (other_vehicle_projected_s-ego_vehicle.s);
 			}
 		}
-	}
-
-	// Faster speed is preferred
-	cost += (SPEED_LIMIT - candidate_velocity) * 10.0;
-
-	// Speed limit is honored
-	if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
-		cost += 1000.0;
 	}
 
 	// Everything else equal, middle lane is preferred, so more option would be available
