@@ -51,6 +51,48 @@ For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculat
 6. **Middle lane is preferred** as it has more options (switch lane right and left) [line 113](./src/behavior_planner.cpp#L113)
 
 ### Trajectory generation
+
+### Rubric criterias
+
+This chapter describes how different Rubric criterias are addressed.
+
+#### The code compiles correctly.
+
+New source files were added to `CMakeList.txt`, but project should still compile on any platform.
+
+#### The car is able to drive at least 4.32 miles without incident.
+
+Screenshot of car driving 10.26 miles without incidents:
+
+![No incidents image](/images/no-incidents.png)
+
+#### The car drives according to the speed limit.
+
+The car drives according to speed limit, because exceeding speed limit is given highest cost in [lines 71-73](./src/behavior_planner.cpp#L71):
+
+```c++
+if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
+	cost += 1000.0;
+}	
+```
+
+#### Max Acceleration and Jerk are not Exceeded.
+
+Max acceleration and jerk is not exceeded by trajectory generator TODO
+
+#### Car does not have collisions.
+
+Car avoids collisions by car keeping safety distance with other vehicles. This is achieved by having high cost for
+candidate trajectories that have ego vehicle close to other vehicles. See `behaviour_planner.cpp` [lines 85-103](./src/behavior_planner.cpp#L71).
+
+
+#### The car stays in its lane, except for the time between changing lanes.
+
+TODO
+
+#### The car is able to change lanes
+
+TODO
    
 ## How to use
 
