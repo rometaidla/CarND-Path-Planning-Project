@@ -1,33 +1,45 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
 
-## Behavior planner
+### Goals
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
-Behavior planner first creates candidate trajectories with different speed and highway lanes:
+#### The map of the highway is in data/highway_map.txt
+Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
+
+The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
+
+## Implementation
+
+### Behavior planner
+
+Behavior planner first creates candidate trajectories with different speed and highway lanes [line 18-19](./src/behavior_planner.cpp#L18):
 ```c++
 vector<double> candidate_velocities = generate_candidate_velocities();
 vector<int> candidate_lanes = generate_candidate_lanes(ego_vehicle);
 ```
 
-Cost is calculated for each candidate:
+Cost is calculated for each candidate [line 28](./src/behavior_planner.cpp#L28):
 
 ```c++
 double candidate_trajectory_cost = this->calculateCost(ego_vehicle, other_vehicles, 
 		    previous_path[0].size(), candidate_lane, candidate_velocity);
 ```
 
-Candidate trajectory with lowest cost is chosen and full trajectory with x and y coordinates is generated.
+Candidate trajectory with lowest cost is chosen and full trajectory with x and y coordinates is generated [line 37](./src/behavior_planner.cpp#L37):
 
 ```c++
 this->best_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s, 
 				candidate_lane_d, candidate_velocity, previous_path);	
 ```
 
-Currently cost calculation doesn't need full trajectory coordinates, hence it is generated only in the end for best 
-trajectory. When full trajectory would be needed for cost calculation, trajectory would be needed to created for every
-candidate.
+Currently cost calculation does not need full trajectory coordinates, hence it is generated only in the end for best 
+trajectory. For real life situation, full trajectory would be probably needed for cost calculation and would be 
+generated for every candidate trajectory.
 
-## Cost calculation
+See chapter Trajectory generator for more information.
+
+### Cost calculation
 
 For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculateCost` [lines 63-118](./src/behavior_planner.cpp#L63) by following rules:
 
@@ -37,7 +49,11 @@ For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculat
 4. **Keep safety distance to vehicle in beside lanes**, higher cost is given to vehicles on beside lanes, than vehicle on the same lane, so that ego vehicle would not start to change lanes when surrounded with vehicles and would instead start to slow down (see rule 3). [lines 95-103](./src/behavior_planner.cpp#L93)
 5. **Prefer empty space** by adding up a cost for every vehicle on candidate lane, very important when choosing whether to take right or left lane change [lines 105-108](./src/behavior_planner.cpp#L105)
 6. **Middle lane is preferred** as it has more options (switch lane right and left) [line 113](./src/behavior_planner.cpp#L113)
+
+### Trajectory generation
    
+## How to use
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
 
@@ -46,15 +62,7 @@ To run the simulator on Mac/Linux, first make the binary file executable with th
 sudo chmod u+x {simulator_file_name}
 ```
 
-### Goals
-In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
-
-#### The map of the highway is in data/highway_map.txt
-Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
-
-The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
-
-## Basic Build Instructions
+### Basic Build Instructions
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
