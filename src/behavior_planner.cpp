@@ -28,13 +28,13 @@ void BehaviorPlanner::plan_trajectory(Vehicle ego_vehicle, vector<Vehicle> other
 		  double candidate_trajectory_cost = this->calculateCost(ego_vehicle, other_vehicles, 
 		    previous_path[0].size(), candidate_lane, candidate_velocity);
 
-		  cout << "Candidate trajectory: canidate_lane=" << candidate_lane << ", candidate_velocity=" << candidate_velocity << ", cost=" << candidate_trajectory_cost << endl; 
+		  cout << "Candidate trajectory: candidate_lane=" << candidate_lane << ", candidate_velocity=" << candidate_velocity << ", cost=" << candidate_trajectory_cost << endl;
 		  
 		  if (candidate_trajectory_cost < current_minimal_cost) {
 		    current_minimal_cost = candidate_trajectory_cost;
-		    
-		    double candidate_lane_d = 2+4*candidate_lane; // TODO: refactor
-			this->best_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s, 
+
+		    double candidate_lane_d = LANE_WIDTH/2.0+LANE_WIDTH*candidate_lane;
+            this->best_trajectory = trajectory_generator.generateTrajectory(ego_vehicle.x, ego_vehicle.y, ego_vehicle.yaw, ego_vehicle.s,
 				candidate_lane_d, candidate_velocity, previous_path);		  
 		    this->ref_vel = candidate_velocity;
 		  } 

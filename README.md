@@ -37,6 +37,25 @@ Currently cost calculation does not need full trajectory coordinates, hence it i
 trajectory. For real life situation, full trajectory would be probably needed for cost calculation and would be 
 generated for every candidate trajectory.
 
+Sample of costs for different candidate trajectories:
+```
+Candidate trajectory: candidate_lane=0, candidate_velocity=50, cost=11049
+Candidate trajectory: candidate_lane=0, candidate_velocity=49.75, cost=11001.5
+Candidate trajectory: candidate_lane=0, candidate_velocity=49.5, cost=9953.95
+Candidate trajectory: candidate_lane=0, candidate_velocity=49.25, cost=9906.45
+Candidate trajectory: candidate_lane=0, candidate_velocity=49, cost=9858.95
+Candidate trajectory: candidate_lane=1, candidate_velocity=50, cost=1000
+Candidate trajectory: candidate_lane=1, candidate_velocity=49.75, cost=1002.5
+Candidate trajectory: candidate_lane=1, candidate_velocity=49.5, cost=5
+Candidate trajectory: candidate_lane=1, candidate_velocity=49.25, cost=7.5
+Candidate trajectory: candidate_lane=1, candidate_velocity=49, cost=10
+Candidate trajectory: candidate_lane=2, candidate_velocity=50, cost=2382.51
+Candidate trajectory: candidate_lane=2, candidate_velocity=49.75, cost=2385.01
+Candidate trajectory: candidate_lane=2, candidate_velocity=49.5, cost=1387.51
+Candidate trajectory: candidate_lane=2, candidate_velocity=49.25, cost=1390.01
+Candidate trajectory: candidate_lane=2, candidate_velocity=49, cost=1392.51
+```
+
 See chapter Trajectory generator for more information.
 
 ### Cost calculation
@@ -51,6 +70,48 @@ For every candidate trajectory, cost is calculated in `BehaviorPlanner::calculat
 6. **Middle lane is preferred** as it has more options (switch lane right and left) [line 113](./src/behavior_planner.cpp#L113)
 
 ### Trajectory generation
+
+Trajectory is generated using spline library in `trajectory_generator.cpp` class by following approach described in 
+Udacity project Q&A video.
+
+Previous path coordinates (trajectory not consumed yet by simulator) are used as starting point for generating new trajectory,
+this causes trajectory transitions to be smooth. See `trajectory_generator.cpp` [lines 30-55](./src/trajectory_generator.cpp#L55).
+
+3 anchor points spaced by 30 in s and d coordinates are used to define a spline `trajectory_generator.cpp` [lines 57-74](./src/trajectory_generator.cpp#L57):
+
+```c++
+int anchor_points_count = 3;
+int anchor_points_spacing = 30;
+for (int i = 1; i <= anchor_points_count; i++) {
+    int anchor_point_s = car_s + i*anchor_points_spacing;
+    vector<double> anchor_point = getXY(anchor_point_s, target_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    anchor_points_x.push_back(anchor_point[0]);
+    anchor_points_y.push_back(anchor_point[1]);  
+}
+```
+
+Then all other points are interpolated with spline library with appropriate spacing needed for low jerk and 
+accelerations `trajectory_generator.cpp` [lines 78-113](./src/trajectory_generator.cpp#L78):
+
+```c++
+tk::spline s;
+s.set_points(anchor_points_x, anchor_points_y);
+
+...
+
+for (int i = 1; i <= 50-previous_path_x.size(); i++) {
+    double N = target_dist / (.02*reference_velocity/2.24); // todo: rename step length, move outside of loop
+    double x_point = x_add_on+target_x/N;
+    double y_point = s(x_point);
+
+    ...
+
+    interpolated_points_x.push_back(x_point);
+    interpolated_points_y.push_back(y_point);
+}
+```
+
+For simplifying calculation, car reference angle is shifted to 0 and result is shifted back to original yaw.
 
 ### Rubric criterias
 
@@ -68,7 +129,8 @@ Screenshot of car driving 10.26 miles without incidents:
 
 #### The car drives according to the speed limit.
 
-The car drives according to speed limit, because exceeding speed limit is given highest cost in [lines 71-73](./src/behavior_planner.cpp#L71):
+The car drives according to speed limit, because exceeding speed limit is given highest cost in 
+`trajectory_generator.cpp` [lines 71-73](./src/behavior_planner.cpp#L71):
 
 ```c++
 if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
@@ -78,21 +140,43 @@ if (candidate_velocity > (SPEED_LIMIT - 0.5)) {
 
 #### Max Acceleration and Jerk are not Exceeded.
 
-Max acceleration and jerk is not exceeded by trajectory generator TODO
+Max acceleration and jerk is not exceeded by changing reference speed by small increments 
+`trajectory_generator.cpp` [lines 45-47](./src/behavior_planner.cpp#L45):
+
+```c++
+vector<double> BehaviorPlanner::generate_candidate_velocities() {
+	return { ref_vel+0.50, ref_vel+0.25, ref_vel, ref_vel-0.25, ref_vel-0.50};	
+}
+```
+
+and by adding appropriate amount of points onto trajectory `trajectory_generator.cpp` [lines 93-95](./src/trajectory_generator.cpp#L93):
+
+```c++
+double N = target_dist / (.02*reference_velocity/2.24); // todo: rename step length, move outside of loop
+double x_point = x_add_on+target_x/N;
+double y_point = s(x_point);
+```
+
 
 #### Car does not have collisions.
 
 Car avoids collisions by car keeping safety distance with other vehicles. This is achieved by having high cost for
-candidate trajectories that have ego vehicle close to other vehicles. See `behaviour_planner.cpp` [lines 85-103](./src/behavior_planner.cpp#L71).
-
+candidate trajectories that have ego vehicle close to other vehicles. 
+See `behaviour_planner.cpp` [lines 85-103](./src/behavior_planner.cpp#L71).
 
 #### The car stays in its lane, except for the time between changing lanes.
 
-TODO
+The car stays in its lane because generate trajectory target point in Frenet is defined to be in a middle of lane 
+`behaviour_planner.cpp` [line 36](./src/behavior_planner.cpp#L36):
+
+```c++
+double candidate_lane_d = 4*LANE_WIDTH + LANE_WIDTH/2;
+```
 
 #### The car is able to change lanes
 
-TODO
+Candidate trajectories with lane changes is created and cost is calculate for them. When cost for trajectories with
+lane changes is lower than current lane, vehicle changes lane. See `behaviour_planner.cpp` [line 49-61](./src/behavior_planner.cpp#L49).
    
 ## How to use
 
